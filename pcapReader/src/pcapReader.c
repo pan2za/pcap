@@ -171,7 +171,7 @@ main(int argc, char *argv[])
     }
     
     fprintf(stderr, "pcap file    : %s\n", argv[i]);
-    
+    fprintf(stderr, "src-ip, dst-ip\r\n");
     /* read packets from the pcap file */
     while ((pkt = pcap_next(handle, &hdr))) {
       if (hdr.ts.tv_sec == 0)
@@ -179,23 +179,34 @@ main(int argc, char *argv[])
       
       /* check timestamp and print packet volume */
       if (hdr.ts.tv_sec - prev_t >= PRINT_PERIOD) {
-	print_time(stdout, hdr.ts);
-	printf(" %"PRIu64"\n", volume);
+	//print_time(stdout, hdr.ts);
+	//printf(" %"PRIu64"\n", volume);
 	prev_t = hdr.ts.tv_sec;
 	volume = 0;
       }
       volume += hdr.len;
-
+      
+      struct iphdr *ip_hdr = get_ipv4_hdr(pkt);
+      if(ip_hdr)
+      {
+	struct in_addr a, b;
+	memcpy(&a,&ip_hdr->saddr,4);
+	memcpy(&b,&ip_hdr->daddr,4);
+	fprintf(stderr, "%s,", inet_ntoa(a));
+	fprintf(stderr, "%s\r\n", inet_ntoa(b));
+      }
+#if 0 
       if (process_packet(&hdr, pkt) == -1) {
 	fprintf(stderr, "process_packet failure\n");
 	break;
       }
+#endif
     }
     
     /* close the pcap file */
     pcap_close(handle);
   }
-
+#if 0
   handle = NULL;
 
   printf("----------------------------------------------------------------\n");
@@ -233,7 +244,7 @@ main(int argc, char *argv[])
 
   /* check concurrent flows */
   check_flows();
-
+#endif
  main_end4:
 #ifdef ENABLE_RAW_DATA_OUT
   fclose(flow_len_out);
